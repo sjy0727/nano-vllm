@@ -91,3 +91,40 @@ class LLMEngine:
         if use_tqdm:
             pbar.close()
         return outputs
+        
+    def stream_step(self):
+        seqs, is_prefill = self.scheduler.schedule()
+        token_ids = self.model_runner.call("run", seqs, is_prefill)
+        self.scheduler.postprocess(seqs, token_ids)
+        results = []
+        for seq, token_id in zip(seqs, token_ids):
+            if seq.num_completion_tokens > 0:
+                new_token_id = seq.completion_token_ids[-1]
+                new_token_text = self.tokenizer.decode([new_token_id])
+            else:
+                new_token_id = None
+                new_token_text = None
+            results.append((seq.seq_id, new_token_id, new_token_text, seq.is_finished))
+        return results
+
+    def stream_generate(
+        self,
+        prompts: list[str] | list[list[int]],
+        sampling_params: SamplingParams | list[SamplingParams],
+    ):
+        if not isinstance(sampling_params, list):
+            sampling_params = [sampling_params] * len(prompts)
+        for prompt, sp in zip(prompts, sampling_params):
+            self.add_request(prompt, sp)
+        seq_id2idx = {}
+        for idx, prompt in enumerate(prompts):
+            seq_id2idx[idx] = idx 
+        finished = set()
+        while not self.is_finished():
+            results = self.stream_step()
+            for seq_id, token_id, token_text, is_finished in results:
+                idx = seq_id2idx.get(seq_id, seq_id)
+                if token_id is not None and idx not in finished:
+                    yield idx, token_text, token_id, is_finished
+                if is_finished:
+                    finished.add(idx)
