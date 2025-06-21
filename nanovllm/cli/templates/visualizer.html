@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nano-vllm Block Manager Visualizer</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #1a1a1a; color: #e0e0e0; margin: 0; padding: 20px; }
+        h1, h2 { text-align: center; color: #00bcd4; }
+        .container { max-width: 1600px; margin: auto; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background-color: #2c2c2c; border-radius: 8px; padding: 15px; text-align: center; border-left: 5px solid #00bcd4; }
+        .stat-card h3 { margin: 0 0 10px; font-size: 1em; color: #a0a0a0; }
+        .stat-card p { margin: 0; font-size: 2em; font-weight: bold; }
+        .blocks-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; background-color: #252525; padding: 15px; border-radius: 8px; }
+        .block { border: 1px solid #444; border-radius: 4px; padding: 8px; font-size: 0.8em; text-align: center; transition: all 0.3s ease-in-out; }
+        .block-id { font-weight: bold; display: block; margin-bottom: 4px; color: #ccc; }
+        .block-info { font-size: 0.9em; }
+        .block.free { background-color: #2e7d32; border-color: #66bb6a; }
+        .block.used { background-color: #b28704; border-color: #ffca28; }
+        .block.shared { background-color: #b71c1c; border-color: #ef5350; }
+        .footer { text-align: center; margin-top: 20px; font-size: 0.8em; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Nano-VLLM Block Manager</h1>
+        <div id="stats" class="stats-grid"></div>
+        <h2>Physical KV Blocks</h2>
+        <div id="blocks-container" class="blocks-container"></div>
+    </div>
+    <div class="footer">
+        <p>Polling every 1 second. Refreshing automatically.</p>
+    </div>
+
+    <script>
+        const statsContainer = document.getElementById('stats');
+        const blocksContainer = document.getElementById('blocks-container');
+
+        function createStatCard(title, value, color) {
+            const card = document.createElement('div');
+            card.className = 'stat-card';
+            if (color) {
+                card.style.borderLeftColor = color;
+            }
+            card.innerHTML = `<h3>${title}</h3><p>${value}</p>`;
+            return card;
+        }
+
+        async function updateData() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+
+                // Update stats
+                statsContainer.innerHTML = '';
+                statsContainer.appendChild(createStatCard('Total Blocks', data.num_total_blocks, '#4fc3f7'));
+                statsContainer.appendChild(createStatCard('Free Blocks', data.num_free_blocks, '#81c784'));
+                statsContainer.appendChild(createStatCard('Used Blocks', data.num_used_blocks, '#ffd54f'));
+                statsContainer.appendChild(createStatCard('Waiting Reqs', data.num_waiting_seqs, '#ffb74d'));
+                statsContainer.appendChild(createStatCard('Running Reqs', data.num_running_seqs, '#64b5f6'));
+
+                // Update blocks
+                blocksContainer.innerHTML = '';
+                data.blocks.forEach(block => {
+                    const blockDiv = document.createElement('div');
+                    let blockClass = 'block';
+                    let info = '';
+
+                    if (block.is_free) {
+                        blockClass += ' free';
+                        info = 'Status: Free';
+                    } else if (block.ref_count > 1) {
+                        blockClass += ' shared';
+                        info = `Seqs: ${block.seq_ids.join(',')}<br>Refs: ${block.ref_count}`;
+                    } else {
+                        blockClass += ' used';
+                        info = `Seq: ${block.seq_ids.join(',')}`;
+                    }
+                    
+                    blockDiv.className = blockClass;
+                    blockDiv.innerHTML = `<span class="block-id">Block ${block.id}</span><span class="block-info">${info}</span>`;
+                    blocksContainer.appendChild(blockDiv);
+                });
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                blocksContainer.innerHTML = '<p style="color: #ef5350; text-align: center;">Error connecting to the visualizer server.</p>';
+            }
+        }
+
+        setInterval(updateData, 1000);
+        window.onload = updateData;
+    </script>
+</body>
+</html> 

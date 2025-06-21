@@ -18,6 +18,12 @@ dependencies = [
     "flash-attn",
     "nvidia-ml-py",
     "xxhash",
+    "fastapi",
+    "uvicorn",
+    "typer",
+    "python-dotenv",
+    "rich",
+    "requests",
 ]
 
 [project.urls]
