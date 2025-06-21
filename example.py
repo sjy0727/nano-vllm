@@ -22,13 +22,21 @@ def main():
         )
         for prompt in prompts
     ]
-    outputs = llm.generate(prompts, sampling_params)
+    
+    # outputs = llm.generate(prompts, sampling_params)
 
-    for prompt, output in zip(prompts, outputs):
-        print("\n")
-        print(f"Prompt: {prompt!r}")
-        print(f"Completion: {output['text']!r}")
+    # for prompt, output in zip(prompts, outputs):
+    #     print("\n")
+    #     print(f"Prompt: {prompt!r}")
+    #     print(f"Completion: {output['text']!r}")
 
+    print("\n--- stream output ---\n")
+    for idx, token, token_id, is_finished in llm.stream_generate(prompts, sampling_params):
+        if token_id == llm.tokenizer.eos_token_id:
+            continue  # skip eos token
+        print(token, end="", flush=True)
+        if is_finished:
+            print("\n", flush=True)
 
 if __name__ == "__main__":
     main()
