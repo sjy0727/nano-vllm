@@ -549,8 +549,8 @@ def main(
 if __name__ == "__main__":
     cli()
 
-# 启动命令: uvicorn nanovllm.cli.server:app --host 0.0.0.0 --port 8000
-# python -m nanovllm.cli.server \
+# 启动命令: uvicorn nanovllm.endpoints.server:app --host 0.0.0.0 --port 8000
+# python -m nanovllm.endpoints.server \
 #   --model-path ~/llms/Qwen3-0.6B \
 #   --api-key "token-abc123" \
 #   --tp 2

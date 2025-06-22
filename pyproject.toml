@@ -31,3 +31,6 @@ Homepage="https://github.com/GeeeekExplorer/nano-vllm"
 
 [tool.setuptools]
 packages = ["nanovllm"]
+
+[project.scripts]
+nanovllm = "nanovllm.endpoints.cli.cli:app"
