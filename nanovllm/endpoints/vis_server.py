@@ -14,7 +14,7 @@ _engine_ref = {}
 def get_engine() -> "LLMEngine":
     return _engine_ref.get("engine")
 
-def run_visualizer_server(engine: "LLMEngine", host: str = "0.0.0.0", port: int = 8001):
+def run_vis_server(engine: "LLMEngine", host: str = "0.0.0.0", port: int = 8001):
     _engine_ref["engine"] = engine
     
     app = FastAPI()

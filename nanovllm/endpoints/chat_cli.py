@@ -97,7 +97,7 @@ def main(
     # Visualization check comes after argument parsing but before model loading
     if visualize:
         try:
-            from nanovllm.cli.visualizer_server import run_visualizer_server
+            from nanovllm.cli.vis_server import run_vis_server
         except ImportError:
             console.print("[bold red]Error:[/bold red] To use the visualizer, please install the optional dependencies:")
             console.print("pip install fastapi \"uvicorn[standard]\"", style="yellow")
@@ -118,7 +118,7 @@ def main(
     # Start visualizer server if requested
     if visualize:
         # The LLM object conveniently holds the engine instance
-        run_visualizer_server(llm)
+        run_vis_server(llm)
 
     messages: List[Dict[str, str]] = [{"role": "system", "content": HISTORY_SYSTEM_PROMPT}]
 
