@@ -15,6 +15,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from transformers import AutoTokenizer
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request as StarletteRequest
 
 from nanovllm import LLM, SamplingParams
 from nanovllm.utils.memory import print_gpu_info
@@ -46,6 +48,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+class PrintRequestMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: StarletteRequest, call_next):
+        print(f"收到请求: {request.method} {request.url}")
+        print(f"请求头: {dict(request.headers)}")
+        try:
+            body = await request.body()
+            print(f"请求体: {body.decode(errors='ignore')}")
+        except Exception as e:
+            print(f"读取请求体出错: {e}")
+        response = await call_next(request)
+        return response
+
+# app.add_middleware(PrintRequestMiddleware)
 
 # --- Pydantic Models ---
 class Function(BaseModel):

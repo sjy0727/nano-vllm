@@ -5,14 +5,12 @@ import time
 import asyncio
 from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.responses import StreamingResponse, JSONResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 from transformers import AutoTokenizer
 from nanovllm import LLM, SamplingParams
 import typer
 
 app = FastAPI()
-security = HTTPBearer()
 
 class ChatMessage(BaseModel):
     role: str
@@ -39,12 +37,6 @@ class ChatCompletionRequest(BaseModel):
     tool_choice: dict | str = None
     response_format: ResponseFormat = None
 
-def api_key_security(request: Request, credentials: HTTPAuthorizationCredentials = Depends(security)):
-    api_keys = getattr(request.app.state, "api_keys", [])
-    if not api_keys:
-        return
-    if credentials.scheme != "Bearer" or credentials.credentials not in api_keys:
-        raise HTTPException(status_code=401, detail="Invalid or missing API key")
 
 @app.on_event("startup")
 def load_model():
@@ -57,7 +49,7 @@ def load_model():
     app.state.model_id = model_id
     app.state.model_path = model_path
 
-@app.post("/v1/chat/completions", dependencies=[Depends(api_key_security)])
+@app.post("/v1/chat/completions")
 async def chat_completions(body: ChatCompletionRequest, request: Request):
     if body.model.lower() != app.state.model_id.lower():
         raise HTTPException(400, f"Model {body.model} not found (only loaded model: {app.state.model_id})")
@@ -199,10 +191,9 @@ async def health():
 cli = typer.Typer()
 
 @cli.command()
-def main(model_path: str = typer.Option(None, "--model-path", help="Path to the LLM model."), api_key: list[str] = typer.Option([], "--api-key", help="API key to protect the endpoints. Can be used multiple times."), host: str = "0.0.0.0", port: int = 8000):
+def main(model_path: str = typer.Option(None, "--model-path", help="Path to the LLM model."), host: str = "0.0.0.0", port: int = 8000):
     if model_path:
         os.environ["NANOVLLM_MODEL_PATH"] = model_path
-    app.state.api_keys = api_key
     import uvicorn
     uvicorn.run(app, host=host, port=port)
 

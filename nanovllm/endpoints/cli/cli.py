@@ -25,3 +25,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# ssh -L 8000:0.0.0.0:8000 -p 2022 root@localhost
+# netsh interface portproxy delete v4tov4 listenport=8000 listenaddress=0.0.0.0
+# netsh interface portproxy show all
+# netsh interface portproxy add v4tov4 listenport=8000 listenaddress=0.0.0.0 connectport=8000 connectaddress=127.0.0.1
